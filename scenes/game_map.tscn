@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://esmn3u3sj8ax"]
+
+[ext_resource type="Script" uid="uid://b0d33lkxyd6fs" path="res://scripts/GameMap.cs" id="1_anrn8"]
+[ext_resource type="Texture2D" uid="uid://cqksv3nmqacmb" path="res://assets/background_map_1.jpg" id="1_qebxc"]
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_tyn2t"]
+
+[node name="GameMap" type="Node2D" unique_id=324906541 node_paths=PackedStringArray("_backgroundMap", "_ground")]
+script = ExtResource("1_anrn8")
+_backgroundMap = NodePath("BackgroundMap")
+_ground = NodePath("Ground")
+
+[node name="BackgroundMap" type="Sprite2D" parent="." unique_id=1584972956]
+texture = ExtResource("1_qebxc")
+
+[node name="Ground" type="StaticBody2D" parent="." unique_id=562208604]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground" unique_id=788477361]
+shape = SubResource("WorldBoundaryShape2D_tyn2t")

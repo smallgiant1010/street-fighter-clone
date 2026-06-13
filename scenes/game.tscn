@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://csbevtstxb0tg"]
+
+[ext_resource type="Script" uid="uid://lumjtftp0j1d" path="res://scripts/GameManager.cs" id="1_lbhrr"]
+[ext_resource type="PackedScene" uid="uid://esmn3u3sj8ax" path="res://scenes/game_map.tscn" id="1_uwrxv"]
+[ext_resource type="PackedScene" uid="uid://dc0mdldv3gwya" path="res://scenes/character_1.tscn" id="2_yqjtg"]
+[ext_resource type="Script" uid="uid://dgc36urjv18ra" path="res://scripts/CameraController.cs" id="3_iywne"]
+
+[node name="Game" type="Node" unique_id=580679622]
+
+[node name="GameMap" parent="." unique_id=324906541 instance=ExtResource("1_uwrxv")]
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1894095935 node_paths=PackedStringArray("_gameMap")]
+limit_left = -1585
+limit_top = -540
+limit_right = 1585
+limit_bottom = 540
+script = ExtResource("3_iywne")
+_gameMap = NodePath("../GameMap")
+
+[node name="GameManager" type="Node" parent="." unique_id=958063428 node_paths=PackedStringArray("_gameMap")]
+script = ExtResource("1_lbhrr")
+Map_Index = 1
+_gameMap = NodePath("../GameMap")
+
+[node name="Character_1" parent="." unique_id=1021978145 instance=ExtResource("2_yqjtg")]
+scale = Vector2(5.5, 5.5)
+Speed = 550.0
+JumpVelocity = -950.0
+Gravity = 2600.0
