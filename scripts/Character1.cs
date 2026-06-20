@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -12,25 +13,37 @@ public enum CharacterState
 
 public partial class Character1 : CharacterBody2D
 {
-	[Export] private float Speed = 300.0f;
-	[Export] private float JumpVelocity = -400.0f;
-	[Export] private float Gravity = 9.81f; // gravity is flipped since we negative goes up instead of down
+	[ExportGroup("Physics Values")]
+	[Export] private float Speed = 300.0f, JumpVelocity = -700.0f;
+	[Export] private float Gravity = 2000.0f; // gravity is flipped since we negative goes up instead of down
+	[ExportGroup("Dependencies")]
 	[Export] private AnimatedSprite2D _animatedSprite;
-	[Export] private CollisionShape2D _collisionShape;
-	private CharacterState characterState;
-	private CharacterState lastCharacterState;
-	private IDictionary<CharacterState, CollisionMetaData> collisionProperties;
+	[Export] private Area2D _hurtBoxArea2D, _hitBoxArea2D;
+	[Export] private GameMap _gameMap;
+	private CollisionShape2D _hurtBoxCollisionShape, _hitBoxCollisionShape, _worldCollisionShape;
+	private CharacterState characterState, lastCharacterState;
+	private float leftBound, rightBound;
+	private readonly Dictionary<CharacterState, CollisionMetaData> hurtBoxCollisionProperties = new();
 
 	public override void _Ready()
 	{
 		Scale = new Vector2(5.5f, 5.5f);
 		characterState = CharacterState.IDLE;
 		lastCharacterState = characterState;
-		collisionProperties = new Dictionary<CharacterState, CollisionMetaData>();
+		_hurtBoxCollisionShape = _hurtBoxArea2D.GetNode<CollisionShape2D>("CollisionShape2D");
+		_hitBoxCollisionShape = _hitBoxArea2D.GetNode<CollisionShape2D>("CollisionShape2D");
+		_worldCollisionShape = GetNode<CollisionShape2D>("WorldCollisionShape2D");
+		_gameMap.MapLoaded += OnMapLoaded;
 		CreateCollisionProperties();
 	}
 
-	public override void _Process(double delta)
+    private void OnMapLoaded(int width, int height)
+	{
+		rightBound = (int)Mathf.Ceil(width / 2.0f);
+		leftBound = -1 * rightBound;
+	}
+
+    public override void _Process(double delta)
 	{
 		PlayAnimation();
 	}
@@ -39,39 +52,40 @@ public partial class Character1 : CharacterBody2D
 	{
 		bool grounded = IsOnFloor();
 		float XDirection = Input.GetAxis("Backwards", "Forwards");
-		HandleMovement((float)delta, XDirection, grounded);
 		UpdateState(XDirection, grounded);
-		UpdateCollision();
+		HandleMovement((float)delta, XDirection, grounded);
+		UpdateHurtBoxCollision();
 	}
 
-	private void UpdateCollision()
+	private void UpdateHurtBoxCollision()
 	{
 		if (characterState == lastCharacterState) return;
-		_collisionShape.Position = collisionProperties[characterState].PositionOffset;
-		((RectangleShape2D)_collisionShape.Shape).Size = collisionProperties[characterState].Size;
+		_hurtBoxCollisionShape.Position = hurtBoxCollisionProperties[characterState].PositionOffset;
+		((RectangleShape2D)_hurtBoxCollisionShape.Shape).Size = hurtBoxCollisionProperties[characterState].Size;
 		lastCharacterState = characterState;
 	}
 
 	private void CreateCollisionProperties()
 	{
-		CollisionMetaData idleData = new CollisionMetaData(-13.25f, 0f, 0f, 31.0f, 86.0f);
-		collisionProperties.Add(CharacterState.IDLE, idleData);
+		CollisionMetaData idleData = new(-11.75f, 4.0f, 0f, 33.5f, 90.0f);
+		hurtBoxCollisionProperties.Add(CharacterState.IDLE, idleData);
 
-		CollisionMetaData walkingBackwardsData = new CollisionMetaData(-2.0f, 0f, 0f, 26.5f, 86.0f);
-		collisionProperties.Add(CharacterState.WALKING_BACKWARDS, walkingBackwardsData);
+		CollisionMetaData walkingBackwardsData = new(2.0f, 4.0f, 0f, 26.5f, 90.0f);
+		hurtBoxCollisionProperties.Add(CharacterState.WALKING_BACKWARDS, walkingBackwardsData);
 		
-		CollisionMetaData walkingForwardsData = new CollisionMetaData(0f, 0f, 0f, 22.0f, 86.0f);
-		collisionProperties.Add(CharacterState.WALKING_FORWARDS, walkingForwardsData);
+		CollisionMetaData walkingForwardsData = new(3.0f, 4.0f, 0f, 22.0f, 90.0f);
+		hurtBoxCollisionProperties.Add(CharacterState.WALKING_FORWARDS, walkingForwardsData);
 
-		CollisionMetaData jumpData = new CollisionMetaData(1.0f, 0f, 0f, 55.0f, 54.0f);
-		collisionProperties.Add(CharacterState.JUMPING, jumpData);
+		CollisionMetaData jumpData = new(-4.0f, 4.0f, 0f, 33.0f, 90.0f);
+		hurtBoxCollisionProperties.Add(CharacterState.JUMPING, jumpData);
 
-		CollisionMetaData crouchData = new CollisionMetaData(0f, 0f, 0f, 41.0f, 56.0f);
-		collisionProperties.Add(CharacterState.CROUCHING, crouchData);
+		CollisionMetaData crouchData = new(-0.5f, 18.5f, 0f, 39.0f, 63.0f);
+		hurtBoxCollisionProperties.Add(CharacterState.CROUCHING, crouchData);
 	}
 
 	private void HandleMovement(float delta, float XDirection, bool grounded)
 	{
+		// GD.Print($"Global Position: ({GlobalPosition.X}, {GlobalPosition.Y})");
 		if (characterState == CharacterState.CROUCHING) return;
 		Vector2 InitialVelocity = Velocity;
 		// handle physics
@@ -88,9 +102,13 @@ public partial class Character1 : CharacterBody2D
 			InitialVelocity += new Vector2(0f, Gravity * delta); // V0 + at
 		}
 		InitialVelocity.X = Speed * XDirection; // x direction has no acceleration so it is not affected by time
-
 		Velocity = InitialVelocity; // Vf = V0 + at
 		MoveAndSlide();
+
+		Vector2 CharacterSize = ((RectangleShape2D)_worldCollisionShape.Shape).Size;
+		Vector2 CurrentPosition = GlobalPosition;
+		CurrentPosition.X = Mathf.Clamp(CurrentPosition.X, leftBound + CharacterSize.X, rightBound - CharacterSize.X);
+		GlobalPosition = CurrentPosition;
 	}
 
 	private void UpdateState(float XDirection, bool grounded)

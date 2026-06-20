@@ -9,21 +9,23 @@
 
 [node name="GameMap" parent="." unique_id=324906541 instance=ExtResource("1_uwrxv")]
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=1894095935 node_paths=PackedStringArray("_gameMap")]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1894095935 node_paths=PackedStringArray("_gameMap", "_character1")]
 limit_left = -1585
 limit_top = -540
 limit_right = 1585
 limit_bottom = 540
 script = ExtResource("3_iywne")
 _gameMap = NodePath("../GameMap")
+_character1 = NodePath("../Character_1")
+
+[node name="Character_1" parent="." unique_id=1021978145 node_paths=PackedStringArray("_gameMap") instance=ExtResource("2_yqjtg")]
+scale = Vector2(5.5, 5.5)
+Speed = 550.0
+JumpVelocity = -950.0
+Gravity = 2600.0
+_gameMap = NodePath("../GameMap")
 
 [node name="GameManager" type="Node" parent="." unique_id=958063428 node_paths=PackedStringArray("_gameMap")]
 script = ExtResource("1_lbhrr")
 Map_Index = 1
 _gameMap = NodePath("../GameMap")
-
-[node name="Character_1" parent="." unique_id=1021978145 instance=ExtResource("2_yqjtg")]
-scale = Vector2(5.5, 5.5)
-Speed = 550.0
-JumpVelocity = -950.0
-Gravity = 2600.0
